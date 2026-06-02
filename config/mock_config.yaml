@@ -1,0 +1,12 @@
+problem:
+  name: DSG_W_Band_BWO
+
+optimization:
+  backend: mock_dsg
+  n_initial: 20
+  n_iterations: 5
+  batch_size: 2
+  seed: 42
+  pf_min: 0.8
+  output_dir: data/results/dsg_mock_demo
+  ard: true

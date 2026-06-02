@@ -1,0 +1,43 @@
+problem:
+  name: DSG_W_Band_BWO
+  dim: 5
+  param_names: [W, P, T, G, H]
+
+optimization:
+  backend: cst
+  n_initial: 20
+  n_iterations: 5
+  batch_size: 1
+  seed: 42
+  pf_min: 0.8
+  output_dir: data/results/dsg_cst_run
+  ard: true
+
+cst:
+  template_path: C:/CST_Projects/DSG_WBand_Template.cst
+  results_dir: C:/CST_Projects/dsg_results
+  timeout_per_sim: 3600
+  retries: 1
+  retry_backoff_seconds: 60.0
+  parameter_mapping:
+    W: W
+    P: P
+    T: T
+    G: G
+    H: H
+    N_periods: N_periods
+    conductivity: conductivity
+  fixed_parameters:
+    N_periods: 80
+    conductivity: 2.25e7
+    rounding_radius: 0.0
+  postprocessing:
+    working_band_ghz:
+      - 96.0
+      - 110.0
+    target_frequency_ghz: 100.0
+    dispersion_tm21_filename: dispersion_tm21.txt
+    dispersion_fundamental_filename: dispersion_fundamental.txt
+    kc_tm21_filename: kc_tm21.txt
+    kc_fundamental_filename: kc_fundamental.txt
+    sparameters_filename: sparameters.txt

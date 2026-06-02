@@ -1,0 +1,42 @@
+problem:
+  name: DSG_W_Band_BWO
+  constraint_db: -15.0
+  dim: 5
+  param_names: [W, P, T, G, H]
+  param_bounds:
+    W: [2.8, 3.6]
+    P: [0.70, 0.90]
+    T: [0.22, 0.40]
+    G: [0.12, 0.30]
+    H: [0.45, 0.75]
+  reference_design:
+    W: 3.2
+    P: 0.8
+    T: 0.3
+    G: 0.2
+    H: 0.6
+
+optimization:
+  backend: mock_dsg
+  n_initial: 20
+  n_iterations: 5
+  batch_size: 2
+  seed: 42
+  pf_min: 0.8
+  output_dir: data/results/dsg_default_run
+  ard: true
+
+robustness:
+  tolerance_spec:
+    W: {type: gaussian, scale: 0.01}
+    P: {type: gaussian, scale: 0.005}
+    T: {type: gaussian, scale: 0.004}
+    G: {type: gaussian, scale: 0.004}
+    H: {type: gaussian, scale: 0.008}
+
+acquisition:
+  num_restarts: 10
+  raw_samples: 256
+
+multifidelity:
+  enabled: false

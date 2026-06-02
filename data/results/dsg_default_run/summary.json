@@ -1,0 +1,10 @@
+{
+  "backend": "mock_dsg",
+  "problem_name": "DSG_W_Band_BWO",
+  "n_evaluated": 30,
+  "n_successful": 30,
+  "feasible_rate": 1.0,
+  "best_hypervolume": 0.09942960813492704,
+  "wall_clock_time": 9.7403264,
+  "output_dir": "data\\results\\dsg_default_run"
+}

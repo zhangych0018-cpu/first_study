@@ -1,0 +1,4 @@
+﻿freq_ghz phase_shift
+96 80
+98 85
+100 90

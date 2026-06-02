@@ -1,0 +1,4 @@
+﻿freq_ghz phase_shift vp_norm
+80 80 0.149
+82 85 0.147
+84 90 0.145
