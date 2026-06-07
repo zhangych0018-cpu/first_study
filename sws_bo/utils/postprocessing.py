@@ -5,7 +5,7 @@ from __future__ import annotations
 import io
 import re
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
 
 import numpy as np
 import pandas as pd
@@ -395,3 +395,45 @@ def parse_dsg_cst_results(
             }
         )
     return metrics
+
+
+def parse_dsg_sparameter_results(
+    *,
+    sparameters_path: str | Path,
+    working_band_ghz: tuple[float, float] = (96.0, 110.0),
+) -> dict[str, Any]:
+    """只基于当前真实 CST 已能稳定导出的 S 参数计算 BO 指标。
+
+    这个降参路径用于真实工程暂时缺少 dispersion/Kc/mode-frequency 标准节点时的完整流程联调。
+    五个 DSG 几何变量仍由 BO 修改；减少的是后处理依赖的物理输出数量：
+    用 `S21_mean` 代表传输质量，用 `S11` 起伏代表匹配稳定性，用插入损耗和 `S11_max` 完成目标与约束。
+    """
+
+    validated = validate_required_post_files({"sparameters": sparameters_path})
+    sparams = parse_dsg_sparameters(validated["sparameters"])
+    band_sparams = select_frequency_band(sparams, working_band_ghz, source="DSG S-parameters")
+
+    s11_max = float(band_sparams[S11_COLUMN].max())
+    s11_min = float(band_sparams[S11_COLUMN].min())
+    s11_mean = float(band_sparams[S11_COLUMN].mean())
+    s11_ripple = float(band_sparams[S11_COLUMN].std(ddof=0))
+    s21_mean = float(band_sparams[S21_COLUMN].mean())
+    s21_min = float(band_sparams[S21_COLUMN].min())
+    insertion_loss_mean = float(max(0.0, -s21_mean))
+
+    return {
+        "Kc_mean": s21_mean,
+        "Kc_TM21_mean": s21_mean,
+        "vp_std": s11_ripple,
+        "vp_TM21_std": s11_ripple,
+        "sync_error": s11_ripple,
+        "ohmic_loss_mean": insertion_loss_mean,
+        "S11_max": s11_max,
+        "S21_mean": s21_mean,
+        "S21_min": s21_min,
+        "S11_min": s11_min,
+        "S11_mean": s11_mean,
+        "S11_ripple": s11_ripple,
+        "insertion_loss_mean": insertion_loss_mean,
+        "postprocessing_mode": "sparameter_only",
+    }

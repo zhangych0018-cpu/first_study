@@ -119,6 +119,12 @@ def parse_args() -> argparse.Namespace:
         help="可选 JSON 文件，用于显式指定 dispersion/Kc/mode-frequency 对应的结果树节点。",
     )
     parser.add_argument(
+        "--output-mode",
+        choices=["sparameter_only", "full_dsg"],
+        default="sparameter_only",
+        help="选择后处理验收模式；当前真实工程默认只要求已能稳定导出的 S 参数。",
+    )
+    parser.add_argument(
         "--set-param",
         action="append",
         default=[],
@@ -692,6 +698,7 @@ def run_single_case(
     poll_seconds: float,
     skip_solver: bool,
     result_tree_map: dict[str, str],
+    output_mode: str,
 ) -> dict[str, Any]:
     """执行单个参数 case 的完整 CST 导出流程。"""
 
@@ -723,8 +730,14 @@ def run_single_case(
             result_tree_items=result_tree_map,
         )
 
+        bo_ready = bool(
+            standard_export_summary["required_complete"]
+            or (output_mode == "sparameter_only" and "sparameters" in standard_export_summary["exported"])
+        )
         if standard_export_summary["required_complete"]:
             status_text = "标准 DSG 结果完整"
+        elif bo_ready:
+            status_text = "S 参数降参结果完整，可进入 BO 后处理"
         else:
             status_text = f"标准 DSG 结果不完整: {standard_export_summary['missing']}"
         write_text(case_dir / "case_status.txt", status_text + "\n")
@@ -740,6 +753,8 @@ def run_single_case(
                 "solver_summary": solver_summary,
                 "availability": availability,
                 "standard_dsg_exports": standard_export_summary,
+                "output_mode": output_mode,
+                "bo_ready_for_output_mode": bo_ready,
                 "all_1d_exports_count": len(exported_1d),
                 "all_1d_exports": exported_1d,
             },
@@ -754,6 +769,7 @@ def run_single_case(
             "run_seconds": float(solver_summary.get("run_seconds", 0.0)),
             "changed_parameters": case.changed_parameters,
             "required_complete": bool(standard_export_summary["required_complete"]),
+            "bo_ready_for_output_mode": bo_ready,
         }
     except Exception as exc:
         traceback_text = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
@@ -767,6 +783,7 @@ def run_single_case(
             "run_seconds": 0.0,
             "changed_parameters": case.changed_parameters,
             "required_complete": False,
+            "bo_ready_for_output_mode": False,
         }
     finally:
         close_quietly(project, design_environment)
@@ -810,6 +827,7 @@ def write_batch_summary(run_dir: Path, summaries: list[dict[str, Any]]) -> None:
                 "run_seconds",
                 "solver_name",
                 "required_complete",
+                "bo_ready_for_output_mode",
                 "case_dir",
                 "changed_parameters_json",
             ]
@@ -823,6 +841,7 @@ def write_batch_summary(run_dir: Path, summaries: list[dict[str, Any]]) -> None:
                     summary["run_seconds"],
                     summary["solver_name"],
                     summary["required_complete"],
+                    summary["bo_ready_for_output_mode"],
                     summary["case_dir"],
                     json.dumps(summary["changed_parameters"], ensure_ascii=False),
                 ]
@@ -892,6 +911,7 @@ def run(args: argparse.Namespace) -> int:
                 "parameter_count": len(baseline_parameters),
                 "case_count": len(cases),
                 "skip_solver": args.skip_solver,
+                "output_mode": args.output_mode,
                 "list_parameters": args.list_parameters,
             },
         )
@@ -922,6 +942,7 @@ def run(args: argparse.Namespace) -> int:
                 poll_seconds=args.poll_seconds,
                 skip_solver=args.skip_solver,
                 result_tree_map=result_tree_map,
+                output_mode=args.output_mode,
             )
             summaries.append(summary)
             if summary["success"]:

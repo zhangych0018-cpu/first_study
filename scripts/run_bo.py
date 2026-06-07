@@ -68,6 +68,7 @@ def main() -> None:
         cst_fixed_parameters=cst_cfg.get("fixed_parameters", {}),
         cst_amd64_dir=cst_cfg.get("amd64_dir"),
         cst_poll_seconds=cst_cfg.get("poll_seconds", 5.0),
+        cst_output_mode=cst_cfg.get("output_mode", "full_dsg"),
     )
     summary = optimizer.run()
     print(summary)

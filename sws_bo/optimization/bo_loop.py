@@ -62,6 +62,7 @@ class SWSBayesianOptimizer:
         cst_fixed_parameters: dict[str, float | int | str] | None = None,
         cst_amd64_dir: str | Path | None = None,
         cst_poll_seconds: float = 5.0,
+        cst_output_mode: str = "full_dsg",
     ) -> None:
         self.problem = resolve_problem(problem)
         self.problem_name = getattr(self.problem, "name", self.problem.__name__)
@@ -89,6 +90,7 @@ class SWSBayesianOptimizer:
             cst_fixed_parameters,
             cst_amd64_dir,
             cst_poll_seconds,
+            cst_output_mode,
         )
         self.evaluations = pd.DataFrame()
         self.history = pd.DataFrame()
@@ -110,6 +112,7 @@ class SWSBayesianOptimizer:
         cst_fixed_parameters,
         cst_amd64_dir,
         cst_poll_seconds,
+        cst_output_mode,
     ):
         if self.backend == "mock_dsg":
             return MockDSGCSTSimulator(seed=self.seed)
@@ -127,6 +130,7 @@ class SWSBayesianOptimizer:
                 fixed_parameters=cst_fixed_parameters,
                 cst_amd64_dir=cst_amd64_dir,
                 poll_seconds=cst_poll_seconds,
+                output_mode=cst_output_mode,
             )
         except CSTBackendUnavailableError as exc:
             self.logger.warning("CST unavailable, falling back to mock backend: %s", exc)
@@ -213,9 +217,14 @@ class SWSBayesianOptimizer:
             row["problem_name"] = self.problem_name
             row["is_feasible"] = bool(result.success and self.problem.check_constraint(result.S11_max))
             if result.success:
-                row["neg_Kc_mean"] = -result.Kc_mean
+                objective_values = self.problem.objective_transform(row)
+                row["neg_Kc_mean"] = float(objective_values[0])
+                for name, value in zip(self.problem.objective_names, objective_values[: self.problem.num_objectives]):
+                    row[name] = float(value)
             else:
                 row["neg_Kc_mean"] = np.nan
+                for name in self.problem.objective_names:
+                    row[name] = np.nan
             rows.append(row)
         batch_df = pd.DataFrame(rows)
         self.evaluations = pd.concat([self.evaluations, batch_df], ignore_index=True)
@@ -247,7 +256,7 @@ class SWSBayesianOptimizer:
             hv = 0.0
             feasible_rate = 0.0
         else:
-            objectives = success_df[["neg_Kc_mean", "vp_std", "ohmic_loss_mean"]].to_numpy()
+            objectives = success_df[self.problem.objective_names].to_numpy()
             feasible = success_df["is_feasible"].to_numpy(dtype=bool)
             hv = compute_hypervolume(objectives[feasible], self.problem.hypervolume_ref_point, maximize=False) if feasible.any() else 0.0
             feasible_rate = float(feasible.mean())
@@ -284,7 +293,7 @@ class SWSBayesianOptimizer:
         success_df = self._successful_evaluations()
         if len(success_df) == 0:
             return success_df
-        obj = success_df[["neg_Kc_mean", "vp_std", "ohmic_loss_mean"]].to_numpy()
+        obj = success_df[self.problem.objective_names].to_numpy()
         raw = success_df[self.problem.target_names].to_numpy()
         mask = feasible_pareto_mask(obj, raw, success_df["success"].to_numpy(dtype=bool), problem=self.problem)
         return success_df.loc[mask].reset_index(drop=True)

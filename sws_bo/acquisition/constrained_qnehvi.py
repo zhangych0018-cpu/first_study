@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import numpy as np
 import torch
 from botorch.acquisition.multi_objective.monte_carlo import qNoisyExpectedHypervolumeImprovement
-from botorch.acquisition.multi_objective.objective import IdentityMCMultiOutputObjective
+from botorch.acquisition.multi_objective.objective import GenericMCMultiOutputObjective
 from botorch.optim import optimize_acqf
 try:
     from botorch.sampling.normal import SobolQMCNormalSampler
@@ -40,8 +40,9 @@ def build_qnehvi_acquisition(
     """构建面向前三个目标的带约束 qNEHVI 采集函数，并把约束维度纳入可行性判断。"""
 
     problem = resolve_problem(problem)
-    ref = torch.tensor(ref_point or problem.acquisition_ref_point, dtype=train_X.dtype, device=train_X.device)
-    objective = IdentityMCMultiOutputObjective(outcomes=[0, 1, 2])
+    ref_source = problem.acquisition_ref_point if ref_point is None else ref_point
+    ref = torch.tensor(ref_source, dtype=train_X.dtype, device=train_X.device)
+    objective = GenericMCMultiOutputObjective(lambda samples, X=None: _acq_objective_transform(samples))
     sampler = SobolQMCNormalSampler(num_samples=mc_samples)
     constraints = [lambda samples: samples[..., 3] - problem.s11_constraint_db]
     return qNoisyExpectedHypervolumeImprovement(
@@ -119,9 +120,9 @@ def _acq_objective_transform(Y_raw_objectives: torch.Tensor) -> torch.Tensor:
 
     return torch.stack(
         [
-            Y_raw_objectives[:, 0],
-            -Y_raw_objectives[:, 1],
-            -Y_raw_objectives[:, 2],
+            Y_raw_objectives[..., 0],
+            -Y_raw_objectives[..., 1],
+            -Y_raw_objectives[..., 2],
         ],
         dim=-1,
     )

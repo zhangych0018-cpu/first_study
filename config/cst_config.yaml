@@ -1,5 +1,5 @@
 problem:
-  name: DSG_W_Band_BWO
+  name: dsg_sparameter
   dim: 5
   param_names: [W, P, T, G, H]
 
@@ -16,6 +16,7 @@ optimization:
 cst:
   template_path: C:/CST_Projects/DSG_WBand_Template.cst
   results_dir: C:/CST_Projects/dsg_results
+  output_mode: sparameter_only
   amd64_dir:
   timeout_per_sim: 3600
   retries: 1

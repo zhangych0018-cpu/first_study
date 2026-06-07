@@ -41,7 +41,7 @@ class DSGSWSProblem:
     target_frequency_ghz = 100.0
     working_band_ghz = (96.0, 110.0)
     hypervolume_ref_point = np.array([-3.0, 0.15, 0.22], dtype=float)
-    acquisition_ref_point = np.array([2.0, 0.12, 0.18], dtype=float)
+    acquisition_ref_point = np.array([2.0, -0.12, -0.18], dtype=float)
     default_tolerance_spec = {
         "W": {"type": "gaussian", "scale": 0.010},
         "P": {"type": "gaussian", "scale": 0.004},
@@ -128,3 +128,12 @@ class DSGSWSProblem:
 
         arr = np.asarray(x, dtype=float)
         return {name: float(arr[idx]) for idx, name in enumerate(cls.param_names)}
+
+
+class DSGSParameterProblem(DSGSWSProblem):
+    """定义当前真实 CST 已可稳定导出的 S 参数降参优化问题，仍然保留 DSG 的五个几何设计变量。"""
+
+    name = "DSG_W_Band_SParameter"
+    objective_names = ["neg_S21_mean", "S11_ripple", "insertion_loss_mean"]
+    hypervolume_ref_point = np.array([15.0, 12.0, 15.0], dtype=float)
+    acquisition_ref_point = np.array([-15.0, -12.0, -15.0], dtype=float)

@@ -24,6 +24,7 @@ from .cst_result_export import DEFAULT_FILENAMES, export_standard_dsg_results
 from .postprocessing import (
     PostprocessingError,
     parse_dsg_cst_results,
+    parse_dsg_sparameter_results,
     validate_required_post_files,
 )
 
@@ -94,6 +95,7 @@ class CSTSimulator(ForwardSimulator):
         fixed_parameters: dict[str, float | int | str] | None = None,
         cst_amd64_dir: str | Path | None = None,
         poll_seconds: float = 5.0,
+        output_mode: str = "full_dsg",
     ) -> None:
         self.template_path = Path(template_path) if template_path else Path("__missing_template__.cst")
         self.results_dir = ensure_dir(results_dir)
@@ -102,7 +104,14 @@ class CSTSimulator(ForwardSimulator):
         self.retry_backoff = float(retry_backoff)
         self.working_band_ghz = tuple(float(v) for v in working_band_ghz)
         self.postprocess_filenames = {**DEFAULT_FILENAMES, **(postprocess_filenames or {})}
-        self.result_file_keys = ["dispersion_tm21", "dispersion_fundamental", "kc_tm21", "kc_fundamental", "sparameters"]
+        if output_mode not in {"full_dsg", "sparameter_only"}:
+            raise ValueError(f"Unknown CST output_mode: {output_mode}")
+        self.output_mode = output_mode
+        self.result_file_keys = (
+            ["sparameters"]
+            if self.output_mode == "sparameter_only"
+            else ["dispersion_tm21", "dispersion_fundamental", "kc_tm21", "kc_fundamental", "sparameters"]
+        )
         self.result_tree_items = result_tree_items or {}
         self.parameter_mapping = parameter_mapping or {name: name for name in DSGSWSProblem.param_names}
         self.fixed_parameters = fixed_parameters or {}
@@ -249,7 +258,12 @@ class CSTSimulator(ForwardSimulator):
         payload.update(self.fixed_parameters)
         return payload
 
-    def _parse_results(self, raw_files: dict[str, Path], params: dict[str, float]) -> dict[str, float]:
+    def _parse_results(self, raw_files: dict[str, Path], params: dict[str, float]) -> dict[str, Any]:
+        if self.output_mode == "sparameter_only":
+            return parse_dsg_sparameter_results(
+                sparameters_path=raw_files["sparameters"],
+                working_band_ghz=self.working_band_ghz,
+            )
         return parse_dsg_cst_results(
             dispersion_tm21_path=raw_files["dispersion_tm21"],
             dispersion_fundamental_path=raw_files["dispersion_fundamental"],
@@ -305,8 +319,10 @@ class CSTSimulator(ForwardSimulator):
                 result_tree_items=self.result_tree_items,
             )
             save_json(export_summary, run_dir / "standard_dsg_exports.json")
-            if not export_summary["required_complete"]:
+            if self.output_mode == "full_dsg" and not export_summary["required_complete"]:
                 raise PostprocessingError(f"真实 CST 标准导出不完整: {export_summary['missing']}")
+            if self.output_mode == "sparameter_only" and "sparameters" not in export_summary["exported"]:
+                raise PostprocessingError(f"真实 CST S 参数导出失败: {export_summary['missing'].get('sparameters')}")
         except Exception as exc:
             raw_files["stderr_log"].write_text(
                 "".join(traceback.format_exception(type(exc), exc, exc.__traceback__)),

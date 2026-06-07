@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .dsg_bwo_problem import DSGSWSProblem
+from .dsg_bwo_problem import DSGSParameterProblem, DSGSWSProblem
 
 
 PROBLEM_REGISTRY: dict[str, type] = {
@@ -10,6 +10,9 @@ PROBLEM_REGISTRY: dict[str, type] = {
     "dsg": DSGSWSProblem,
     "dsg_bwo": DSGSWSProblem,
     "dsg_w_band_bwo": DSGSWSProblem,
+    "dsg_sparameter": DSGSParameterProblem,
+    "dsg_sparameters": DSGSParameterProblem,
+    "dsg_w_band_sparameter": DSGSParameterProblem,
 }
 
 
@@ -26,4 +29,4 @@ def resolve_problem(problem: str | type | None) -> type:
     return problem
 
 
-__all__ = ["DSGSWSProblem", "PROBLEM_REGISTRY", "resolve_problem"]
+__all__ = ["DSGSParameterProblem", "DSGSWSProblem", "PROBLEM_REGISTRY", "resolve_problem"]

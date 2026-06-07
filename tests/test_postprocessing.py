@@ -10,6 +10,7 @@ from sws_bo.utils.postprocessing import (
     PostprocessingFormatError,
     parse_dsg_cst_results,
     parse_dsg_dispersion,
+    parse_dsg_sparameter_results,
 )
 
 
@@ -76,3 +77,12 @@ def test_postprocessing_nan_detection():
 def test_postprocessing_unit_conversion():
     dispersion = parse_dsg_dispersion(_bundle_paths("dsg")["dispersion_tm21_path"])
     assert dispersion["freq_ghz"].iloc[1] == pytest.approx(98.0)
+
+
+def test_sparameter_only_postprocessing_uses_available_exports():
+    metrics = parse_dsg_sparameter_results(sparameters_path=_bundle_paths("dsg")["sparameters_path"])
+    assert metrics["postprocessing_mode"] == "sparameter_only"
+    assert metrics["S11_max"] <= -16.0
+    assert metrics["S21_mean"] < 0.0
+    assert metrics["ohmic_loss_mean"] > 0.0
+    assert metrics["vp_std"] >= 0.0
