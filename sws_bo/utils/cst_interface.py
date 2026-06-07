@@ -17,7 +17,6 @@ import numpy as np
 
 from ..data_schema import SimulationResult
 from ..forward_model import ForwardSimulator
-from ..geometry.dsg_sws import DSGGeometryBuilder
 from ..problems.dsg_bwo_problem import DSGSWSProblem
 from .io import ensure_dir, save_json
 from .cst_result_export import DEFAULT_FILENAMES, export_standard_dsg_results
@@ -116,7 +115,6 @@ class CSTSimulator(ForwardSimulator):
         self.parameter_mapping = parameter_mapping or {name: name for name in DSGSWSProblem.param_names}
         self.fixed_parameters = fixed_parameters or {}
         self.poll_seconds = float(poll_seconds)
-        self.geometry_builder = DSGGeometryBuilder()
         self._cst_interface, self._cst_results = load_cst_modules(cst_amd64_dir)
 
     def run(self, x: dict | np.ndarray) -> SimulationResult:
@@ -219,11 +217,11 @@ class CSTSimulator(ForwardSimulator):
         if isinstance(x, dict):
             base = {name: float(value) for name, value in x.items()}
             if all(name in base for name in DSGSWSProblem.param_names):
-                return self.geometry_builder.export_cst_parameter_dict(base)
+                return {name: base[name] for name in DSGSWSProblem.param_names}
             return base
         arr = np.asarray(x, dtype=float)
         if arr.shape[-1] == DSGSWSProblem.dim:
-            params = self.geometry_builder.export_cst_parameter_dict(arr)
+            params = DSGSWSProblem.as_dict(arr)
         else:
             names = DSGSWSProblem.param_names if arr.shape[-1] == DSGSWSProblem.dim else [f"x_{idx}" for idx in range(arr.shape[-1])]
             params = {name: float(arr[idx]) for idx, name in enumerate(names)}
@@ -287,8 +285,7 @@ class CSTSimulator(ForwardSimulator):
         """表示单次真实 CST 尝试的扩展点，实际工程可在这里填入打开模板、写参数、启动求解和导出结果的环境相关细节。"""
 
         _ = (params, run_dir, raw_files, attempt)
-        run_project_path = run_dir / self.template_path.name
-        shutil.copy2(self.template_path, run_project_path)
+        run_project_path = self._copy_template_project(run_dir)
         cst_params = self._build_cst_parameter_payload(params)
 
         design_environment = None
@@ -331,6 +328,18 @@ class CSTSimulator(ForwardSimulator):
             raise
         finally:
             self._close_quietly(project, design_environment)
+
+    def _copy_template_project(self, run_dir: Path) -> Path:
+        """复制 CST 工程文件及其同名展开目录，保证结果库和参数文件在独立 run 目录内保持完整。"""
+
+        run_project_path = (run_dir / self.template_path.name).resolve()
+        shutil.copy2(self.template_path, run_project_path)
+
+        source_bundle_dir = self.template_path.with_suffix("")
+        target_bundle_dir = run_project_path.with_suffix("")
+        if source_bundle_dir.exists() and source_bundle_dir.is_dir():
+            shutil.copytree(source_bundle_dir, target_bundle_dir, dirs_exist_ok=True)
+        return run_project_path
 
     def _apply_parameters(self, project: Any, params: dict[str, float | int | str]) -> None:
         """把当前设计点写入 CST 参数表；优先使用 Python API，失败时回退到 History 中的 `StoreParameter`。"""

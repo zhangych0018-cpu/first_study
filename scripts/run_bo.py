@@ -14,6 +14,12 @@ from sws_bo.problems import resolve_problem
 from sws_bo.utils.io import load_yaml
 
 
+def choose_cli_or_config(cli_value, config_value, default_value):
+    """优先使用命令行显式传入的值；这样 `0` 这类合法值不会被误判为未设置。"""
+
+    return cli_value if cli_value is not None else config_value if config_value is not None else default_value
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run SWS Bayesian optimization")
     parser.add_argument("--backend", choices=["mock_dsg", "cst"], default=None)
@@ -48,11 +54,11 @@ def main() -> None:
     optimizer = SWSBayesianOptimizer(
         backend=args.backend or opt_cfg.get("backend", "mock_dsg"),
         problem=problem,
-        n_initial=args.n_initial or opt_cfg.get("n_initial", 20),
-        n_iterations=args.n_iterations or opt_cfg.get("n_iterations", 5),
-        batch_size=args.batch_size or opt_cfg.get("batch_size", 2),
-        seed=args.seed or opt_cfg.get("seed", 42),
-        pf_min=args.pf_min or opt_cfg.get("pf_min", 0.8),
+        n_initial=choose_cli_or_config(args.n_initial, opt_cfg.get("n_initial"), 20),
+        n_iterations=choose_cli_or_config(args.n_iterations, opt_cfg.get("n_iterations"), 5),
+        batch_size=choose_cli_or_config(args.batch_size, opt_cfg.get("batch_size"), 2),
+        seed=choose_cli_or_config(args.seed, opt_cfg.get("seed"), 42),
+        pf_min=choose_cli_or_config(args.pf_min, opt_cfg.get("pf_min"), 0.8),
         output_dir=opt_cfg.get("output_dir", "data/results/dsg_default_run"),
         resume=args.resume,
         ard=opt_cfg.get("ard", True),

@@ -14,8 +14,8 @@ optimization:
   ard: true
 
 cst:
-  template_path: C:/CST_Projects/DSG_WBand_Template.cst
-  results_dir: C:/CST_Projects/dsg_results
+  template_path: C:/Users/87007/Desktop/SWS/DSG_SWS.cst
+  results_dir: dsg_cst_exports/bo_runs
   output_mode: sparameter_only
   amd64_dir:
   timeout_per_sim: 3600
@@ -31,9 +31,8 @@ cst:
     N_periods: N_periods
     conductivity: conductivity
   fixed_parameters:
-    N_periods: 80
+    N_periods: 40
     conductivity: 2.25e7
-    rounding_radius: 0.0
   postprocessing:
     working_band_ghz:
       - 96.0
