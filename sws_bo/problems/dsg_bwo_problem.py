@@ -135,5 +135,6 @@ class DSGSParameterProblem(DSGSWSProblem):
 
     name = "DSG_W_Band_SParameter"
     objective_names = ["neg_S21_mean", "S11_ripple", "insertion_loss_mean"]
+    s11_constraint_db = 0.0
     hypervolume_ref_point = np.array([15.0, 12.0, 15.0], dtype=float)
     acquisition_ref_point = np.array([-15.0, -12.0, -15.0], dtype=float)
