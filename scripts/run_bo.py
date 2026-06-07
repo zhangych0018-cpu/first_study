@@ -1,4 +1,4 @@
-"""General BO entry point."""
+"""本脚本是 DSG 贝叶斯优化的通用命令行入口，负责加载配置、选择后端、启动优化循环并保存运行结果。无论是 mock 还是真实 CST，这里都是用户最常用的调度入口。"""
 
 from __future__ import annotations
 
@@ -43,6 +43,7 @@ def main() -> None:
         "kc_tm21": post_cfg.get("kc_tm21_filename", "kc_tm21.txt"),
         "kc_fundamental": post_cfg.get("kc_fundamental_filename", "kc_fundamental.txt"),
         "sparameters": post_cfg.get("sparameters_filename", "sparameters.txt"),
+        "mode_frequencies": post_cfg.get("mode_frequencies_filename", "mode_frequencies.csv"),
     }
     optimizer = SWSBayesianOptimizer(
         backend=args.backend or opt_cfg.get("backend", "mock_dsg"),
@@ -62,6 +63,11 @@ def main() -> None:
         cst_retry_backoff=cst_cfg.get("retry_backoff_seconds", 60.0),
         cst_working_band_ghz=working_band,
         cst_postprocess_filenames=postprocess_filenames,
+        cst_result_tree_items=post_cfg.get("result_tree_items", {}),
+        cst_parameter_mapping=cst_cfg.get("parameter_mapping", {}),
+        cst_fixed_parameters=cst_cfg.get("fixed_parameters", {}),
+        cst_amd64_dir=cst_cfg.get("amd64_dir"),
+        cst_poll_seconds=cst_cfg.get("poll_seconds", 5.0),
     )
     summary = optimizer.run()
     print(summary)

@@ -1,3 +1,5 @@
+"""本测试模块用于验证工程代理几何检查函数在合法与非法设计上的判定行为。"""
+
 from sws_bo.problems.dsg_bwo_problem import DSGSWSProblem
 from sws_bo.utils.geometry_checks import is_valid_design
 

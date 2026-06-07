@@ -1,4 +1,4 @@
-"""Static plotting utilities."""
+"""本模块负责生成项目中的静态分析图，包括 Pareto 图、超体积曲线、约束可行性和鲁棒性对比等。它优先保证 matplotlib 路径稳定可用。"""
 
 from __future__ import annotations
 

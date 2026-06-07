@@ -1,4 +1,4 @@
-"""Constrained qNEHVI acquisition helpers."""
+"""本模块实现带约束的 qNEHVI 候选推荐流程，包括参考点组织、约束处理和多起点优化。它是 DSG 多目标贝叶斯优化中生成新设计点的核心组件之一。"""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from botorch.acquisition.multi_objective.objective import IdentityMCMultiOutputO
 from botorch.optim import optimize_acqf
 try:
     from botorch.sampling.normal import SobolQMCNormalSampler
-except ImportError:  # botorch 0.7
+except ImportError:  # 兼容较旧的 botorch 0.7 导入路径
     from botorch.sampling.samplers import SobolQMCNormalSampler
 
 from ..problems.dsg_bwo_problem import DSGSWSProblem
@@ -21,7 +21,7 @@ from .constraints import probability_feasible
 
 @dataclass
 class AcquisitionRecommendation:
-    """Candidate batch with normalized and physical views."""
+    """用于保存一批采集函数推荐候选点，同时保留归一化坐标与物理参数坐标，方便优化器和结果输出同时使用。"""
 
     normalized: np.ndarray
     physical: np.ndarray
@@ -37,7 +37,7 @@ def build_qnehvi_acquisition(
     mc_samples: int = 128,
     problem=DSGSWSProblem,
 ):
-    """Construct constrained qNEHVI for the first three objectives."""
+    """构建面向前三个目标的带约束 qNEHVI 采集函数，并把约束维度纳入可行性判断。"""
 
     problem = resolve_problem(problem)
     ref = torch.tensor(ref_point or problem.acquisition_ref_point, dtype=train_X.dtype, device=train_X.device)
@@ -63,7 +63,7 @@ def optimize_acquisition(
     num_restarts: int = 10,
     raw_samples: int = 256,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Optimize the acquisition over [0,1]^d."""
+    """在归一化超立方体 `[0,1]^d` 上对采集函数做多起点优化，寻找一批新的候选设计点。"""
 
     return optimize_acqf(
         acq_function=acq_function,
@@ -84,7 +84,7 @@ def recommend_candidates(
     raw_samples: int = 256,
     problem=DSGSWSProblem,
 ) -> AcquisitionRecommendation:
-    """Recommend candidate points and enforce a minimum feasibility probability."""
+    """在优化采集函数后返回推荐候选点，并额外施加最小可行概率阈值，避免把明显不可行的点交给后端仿真。"""
 
     problem = resolve_problem(problem)
     bounds = torch.stack(
@@ -115,7 +115,7 @@ def recommend_candidates(
 
 
 def _acq_objective_transform(Y_raw_objectives: torch.Tensor) -> torch.Tensor:
-    """Transform raw outputs to qNEHVI maximization space."""
+    """把原始输出空间变换到 qNEHVI 的最大化空间，使最小化目标能以统一的正向收益形式被采集函数处理。"""
 
     return torch.stack(
         [

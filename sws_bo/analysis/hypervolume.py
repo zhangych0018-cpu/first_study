@@ -1,4 +1,4 @@
-"""Hypervolume utilities."""
+"""本模块实现可行解超体积及其历史曲线计算，是评估多目标优化效率和收敛趋势的重要工具。它强调结果可解释性和指标复现性。"""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ def compute_hypervolume(
     ref_point: np.ndarray,
     maximize: bool = False,
 ) -> float:
-    """Compute hypervolume for low-dimensional objective data."""
+    """对低维目标数据计算超体积指标，用于量化当前可行 Pareto 前沿相对于参考点的覆盖质量。"""
 
     values = np.asarray(objective_values, dtype=float)
     ref = np.asarray(ref_point, dtype=float)
@@ -32,7 +32,7 @@ def hypervolume_history(
     objective_columns: list[str],
     feasible_column: str = "is_feasible",
 ) -> pd.DataFrame:
-    """Compute cumulative hypervolume over evaluation history."""
+    """按评估历史逐步累计计算超体积，帮助观察多目标优化在运行过程中的收敛趋势。"""
 
     rows = []
     for step in range(1, len(history_df) + 1):

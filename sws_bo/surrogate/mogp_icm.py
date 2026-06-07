@@ -1,4 +1,4 @@
-"""Experimental ICM-style multi-task GP interface."""
+"""本模块提供实验性的 ICM / MultiTaskGP 扩展接口，用于在需要时探索输出相关性的联合建模方案。默认主流程并不强依赖它。"""
 
 from __future__ import annotations
 
@@ -9,11 +9,7 @@ from gpytorch.mlls.exact_marginal_log_likelihood import ExactMarginalLogLikeliho
 
 
 def build_icm_model(train_X: torch.Tensor, train_Y: torch.Tensor) -> MultiTaskGP:
-    """Build an experimental multitask GP from dense outputs.
-
-    The default project path uses independent GPs because they are more stable
-    for 50-250 samples.  This ICM-style model is kept as an optional extension.
-    """
+    """构建实验性的多任务 GP / ICM 模型，用于探索输出相关性联合建模的可能收益。"""
 
     n, d = train_X.shape
     tasks = []
@@ -30,7 +26,7 @@ def build_icm_model(train_X: torch.Tensor, train_Y: torch.Tensor) -> MultiTaskGP
 
 
 def fit_icm_model(model: MultiTaskGP) -> MultiTaskGP:
-    """Fit the multitask GP."""
+    """训练实验性多任务 GP 模型，为后续对比独立 GP 与联合 GP 的差异做准备。"""
 
     mll = ExactMarginalLogLikelihood(model.likelihood, model)
     fit_gpytorch_model(mll)

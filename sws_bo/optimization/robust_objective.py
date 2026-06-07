@@ -1,4 +1,4 @@
-"""Manufacturing-tolerance-aware robust objective utilities."""
+"""本模块实现制造公差下的鲁棒评估与排序逻辑，包括期望表现、最坏情形和风险度量近似。它帮助把名义最优设计转化为更可制造的候选。"""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ DEFAULT_TOLERANCE_SPEC_MM = {
 
 @dataclass
 class RobustRankingRecord:
-    """Nominal and robust summary for one candidate."""
+    """保存某个候选点的名义性能与鲁棒性能摘要，用于最终排序和人工比较。"""
 
     design: np.ndarray
     nominal: np.ndarray
@@ -40,7 +40,7 @@ def sample_manufacturing_perturbations(
     seed: int = 0,
     problem=DSGSWSProblem,
 ) -> np.ndarray:
-    """Sample manufacturing perturbations in physical units."""
+    """按制造公差设置在物理单位下采样扰动参数，生成用于鲁棒评估的扰动样本。"""
 
     problem = resolve_problem(problem)
     rng = np.random.default_rng(seed)
@@ -58,19 +58,19 @@ def sample_manufacturing_perturbations(
 
 
 def evaluate_expected_objective(objective_values: np.ndarray) -> np.ndarray:
-    """Expected minimization objective under tolerance samples."""
+    """计算在制造扰动分布下的目标期望值，用于刻画平均意义下的鲁棒表现。"""
 
     return np.asarray(objective_values, dtype=float).mean(axis=0)
 
 
 def evaluate_worst_case_objective(objective_values: np.ndarray) -> np.ndarray:
-    """Worst per-objective value across tolerance samples."""
+    """计算扰动样本中的最坏目标值，用于评估设计在极端偏差下是否仍可接受。"""
 
     return np.asarray(objective_values, dtype=float).max(axis=0)
 
 
 def evaluate_cvar_objective(objective_values: np.ndarray, alpha: float = 0.95) -> np.ndarray:
-    """CVaR on the upper tail for minimization objectives."""
+    """计算最小化目标的上尾 CVaR，度量风险较高区域对整体性能的影响。"""
 
     values = np.asarray(objective_values, dtype=float)
     k = max(1, int(np.ceil(alpha * len(values))))
@@ -94,7 +94,7 @@ def robust_candidate_ranking(
     seed: int = 0,
     problem=DSGSWSProblem,
 ) -> list[RobustRankingRecord]:
-    """Rank candidates by tolerance-aware performance."""
+    """综合名义性能与扰动表现对候选点排序，给出更偏工程稳健性的推荐结果。"""
 
     problem = resolve_problem(problem)
     if simulator is None and surrogate_model is None:

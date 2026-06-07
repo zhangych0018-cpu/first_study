@@ -1,4 +1,4 @@
-"""Ablation experiment helpers."""
+"""本模块封装 DSG 项目的消融实验流程，负责搭建对比设置、执行实验并汇总评价指标。它帮助系统性回答哪些设计选择真正有效。"""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from ..problems import resolve_problem
 
 
 def compare_initial_sample_sizes(sample_sizes: list[int], seed: int = 42, problem=DSGSWSProblem) -> pd.DataFrame:
-    """Compare BO runs started from different initial data budgets."""
+    """比较不同初始样本预算下的 BO 表现，用于观察起始数据量对收敛速度和最终结果的影响。"""
 
     problem = resolve_problem(problem)
     rows = []
@@ -27,7 +27,7 @@ def compare_initial_sample_sizes(sample_sizes: list[int], seed: int = 42, proble
 
 
 def compare_acquisition(seed: int = 42, problem=DSGSWSProblem) -> pd.DataFrame:
-    """Compare qNEHVI against the weighted-sum baseline."""
+    """对比 qNEHVI 和加权和基线等不同采集策略的效果，帮助判断采集函数选择是否真的带来收益。"""
 
     problem = resolve_problem(problem)
     bo = SWSBayesianOptimizer(backend="mock_dsg", problem=problem, n_initial=20, n_iterations=2, batch_size=1, seed=seed)
@@ -42,7 +42,7 @@ def compare_acquisition(seed: int = 42, problem=DSGSWSProblem) -> pd.DataFrame:
 
 
 def compare_constraint_handling(seed: int = 42, problem=DSGSWSProblem) -> pd.DataFrame:
-    """Compare BO with and without minimum feasibility filtering."""
+    """比较带可行概率过滤和不带过滤两种约束处理方式，分析约束策略对搜索稳定性的影响。"""
 
     problem = resolve_problem(problem)
     rows = []
@@ -54,7 +54,7 @@ def compare_constraint_handling(seed: int = 42, problem=DSGSWSProblem) -> pd.Dat
 
 
 def compare_ard(seed: int = 42, problem=DSGSWSProblem) -> pd.DataFrame:
-    """Compare ARD-enabled and isotropic GP models."""
+    """比较启用 ARD 和不启用 ARD 的 GP 模型表现，判断参数各向异性建模是否值得保留。"""
 
     problem = resolve_problem(problem)
     rows = []
@@ -66,7 +66,7 @@ def compare_ard(seed: int = 42, problem=DSGSWSProblem) -> pd.DataFrame:
 
 
 def compare_robust(seed: int = 42, problem=DSGSWSProblem) -> pd.DataFrame:
-    """Compare nominal and robust ranking on final Pareto candidates."""
+    """比较名义排序与鲁棒排序的结果差异，用于评估制造公差分析是否改变最终候选优先级。"""
 
     problem = resolve_problem(problem)
     optimizer = SWSBayesianOptimizer(backend="mock_dsg", problem=problem, n_initial=20, n_iterations=2, batch_size=1, seed=seed)

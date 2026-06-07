@@ -1,3 +1,5 @@
+"""本测试模块用于验证 DSG 后处理解析器对标准样例、异常列和边界频段情况的处理能力。"""
+
 from pathlib import Path
 
 from sws_bo.utils.postprocessing import parse_dsg_cst_results

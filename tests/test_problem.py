@@ -1,3 +1,5 @@
+"""本测试模块用于验证项目默认问题入口与底层 DSG 问题定义之间的一致性。"""
+
 import numpy as np
 
 from sws_bo.problems.dsg_bwo_problem import DSGSWSProblem

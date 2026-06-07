@@ -1,4 +1,4 @@
-"""Run DSG baseline search strategies."""
+"""本脚本用于运行随机搜索、LHS、加权和方法等基线流程，帮助把贝叶斯优化主方法放到可比较的参照系里。它更关注方法对比的一致性，而不是单次最优性能。"""
 
 from __future__ import annotations
 

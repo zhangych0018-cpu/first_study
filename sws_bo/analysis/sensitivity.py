@@ -1,4 +1,4 @@
-"""Sensitivity utilities based on ARD lengthscales."""
+"""本模块依据 ARD 长度尺度等信息估计参数敏感性，并生成排序表和可视化数据。它帮助研究者理解 DSG 结构中哪些几何变量更关键。"""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from ..surrogate.independent_gp import get_ard_lengthscales
 
 
 def ard_lengthscale_to_sensitivity(lengthscales: dict[str, dict[str, float]], problem=DSGSWSProblem) -> pd.DataFrame:
-    """Convert ARD lengthscales to normalized inverse-scale sensitivities."""
+    """把 ARD 长度尺度转换成归一化的反尺度敏感性指标，使数值更便于跨参数比较。"""
 
     problem = resolve_problem(problem)
     rows = []
@@ -31,7 +31,7 @@ def ard_lengthscale_to_sensitivity(lengthscales: dict[str, dict[str, float]], pr
 
 
 def rank_parameters_by_objective(sensitivity_df: pd.DataFrame) -> pd.DataFrame:
-    """Rank parameters by sensitivity per objective."""
+    """针对每个目标输出按敏感性大小对参数排序，帮助识别哪些几何变量更主导结果变化。"""
 
     df = sensitivity_df.copy()
     df["rank"] = df.groupby("output")["sensitivity"].rank(ascending=False, method="dense")
@@ -39,7 +39,7 @@ def rank_parameters_by_objective(sensitivity_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def export_sensitivity_table(model, path, problem=DSGSWSProblem) -> pd.DataFrame:
-    """Export ARD sensitivity table from a fitted GP model."""
+    """从已训练好的 GP 中提取 ARD 信息并导出成敏感性表格，便于报告和绘图使用。"""
 
     table = rank_parameters_by_objective(ard_lengthscale_to_sensitivity(get_ard_lengthscales(model), problem=problem))
     table.to_csv(path, index=False, encoding="utf-8")

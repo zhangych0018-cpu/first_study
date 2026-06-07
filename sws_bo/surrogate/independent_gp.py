@@ -1,4 +1,4 @@
-"""Independent Gaussian-process surrogate models."""
+"""本模块实现项目默认的 independent GP 代理模型方案，采用 Matern-5/2 ARD 内核并面向多目标与约束场景提供稳定的训练和预测接口。"""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from gpytorch.mlls.sum_marginal_log_likelihood import SumMarginalLogLikelihood
 
 
 class AnisotropicMaternSingleTaskGP(SingleTaskGP):
-    """Single-task GP with a Matern-5/2 ARD kernel."""
+    """定义带 Matern-5/2 ARD 内核的单输出 GP 模型，是项目默认独立 GP 方案的基础单元。"""
 
     def __init__(self, train_X: torch.Tensor, train_Y: torch.Tensor, ard: bool = True) -> None:
         super().__init__(
@@ -32,7 +32,7 @@ def build_independent_model(
     train_Y: torch.Tensor,
     ard: bool = True,
 ) -> ModelListGP:
-    """Build one GP per output column."""
+    """针对每个输出维度分别构建一个 GP，并把它们组织成独立多输出代理模型。"""
 
     models = [
         AnisotropicMaternSingleTaskGP(train_X, train_Y[:, idx : idx + 1], ard=ard)
@@ -42,7 +42,7 @@ def build_independent_model(
 
 
 def fit_gp_model(model: ModelListGP) -> ModelListGP:
-    """Fit the independent GP list with exact marginal log likelihood."""
+    """用精确边际似然训练独立 GP 列表，使每个目标或约束维度都完成拟合。"""
 
     mll = SumMarginalLogLikelihood(model.likelihood, model)
     fit_gpytorch_model(mll)
@@ -50,7 +50,7 @@ def fit_gp_model(model: ModelListGP) -> ModelListGP:
 
 
 def predict(model: ModelListGP, X: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-    """Predict posterior mean and standard deviation for all outputs."""
+    """对给定输入点预测所有输出的后验均值与标准差，为采集函数和分析模块提供统一接口。"""
 
     model.eval()
     with torch.no_grad():
@@ -61,7 +61,7 @@ def predict(model: ModelListGP, X: torch.Tensor) -> tuple[torch.Tensor, torch.Te
 
 
 def get_ard_lengthscales(model: ModelListGP) -> dict[str, dict[str, float]]:
-    """Extract per-output ARD lengthscales for sensitivity analysis."""
+    """从训练好的 GP 中提取每个输出对应的 ARD 长度尺度，用于后续敏感性分析。"""
 
     result: dict[str, dict[str, float]] = {}
     for idx, sub_model in enumerate(model.models):
@@ -76,7 +76,7 @@ def get_ard_lengthscales(model: ModelListGP) -> dict[str, dict[str, float]]:
 
 
 def save_model(model: ModelListGP, path: str | Path) -> Path:
-    """Persist a fitted GP state dict."""
+    """把已训练 GP 的状态字典保存到磁盘，便于后续复现或离线分析。"""
 
     path_obj = Path(path)
     path_obj.parent.mkdir(parents=True, exist_ok=True)
@@ -90,7 +90,7 @@ def load_model(
     path: str | Path,
     ard: bool = True,
 ) -> ModelListGP:
-    """Load a fitted GP model from disk."""
+    """从磁盘读取 GP 状态并恢复模型，避免每次分析都重新训练。"""
 
     model = build_independent_model(train_X, train_Y, ard=ard)
     model.load_state_dict(torch.load(Path(path), map_location=train_X.device))

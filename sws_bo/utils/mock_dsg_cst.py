@@ -1,4 +1,4 @@
-"""Mock CST-like simulator for the W-band DSG slow-wave structure."""
+"""本模块实现 DSG 问题的 mock 仿真器，用解析型近似关系模拟频率、耦合、损耗和模式竞争等行为。它用于无真实 CST 环境时的全链路验证。"""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from ..problems.dsg_bwo_problem import DSGSWSProblem
 
 @dataclass
 class MockDSGConfig:
-    """Configuration for the analytic DSG mock simulator."""
+    """保存解析型 DSG mock 仿真器所需的可调配置，例如噪声水平、随机种子和参考参数。"""
 
     seed: int = 42
     noise_scale: float = 1.0
@@ -25,13 +25,13 @@ class MockDSGConfig:
 
 
 class MockDSGCSTSimulator(ForwardSimulator):
-    """Analytic DSG response model that mimics W-band cold-structure tradeoffs."""
+    """实现一个模仿 W 波段 DSG 冷结构权衡关系的解析型仿真器，用于在没有真实 CST 时跑通全流程。"""
 
     def __init__(self, seed: int = 42, noise_scale: float = 1.0, deterministic: bool = True) -> None:
         self.config = MockDSGConfig(seed=seed, noise_scale=noise_scale, deterministic=deterministic)
 
     def run(self, x: dict | np.ndarray | torch.Tensor) -> SimulationResult:
-        """Evaluate one DSG design point."""
+        """评估单个 DSG 设计点，并返回频率、耦合、损耗、约束和模式竞争等 mock 指标。"""
 
         start = time.perf_counter()
         x_phys = self._to_physical_array(x)

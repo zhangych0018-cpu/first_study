@@ -1,4 +1,4 @@
-"""Initial experimental design generators."""
+"""本模块实现 LHS、Sobol、本地扰动和混合初始设计策略，并在生成样本时结合几何合法性检查。它决定了优化初始数据的覆盖质量。"""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from ..problems import resolve_problem
 
 @dataclass
 class DesignGenerationResult:
-    """Design generator output with optional invalid points."""
+    """保存初始设计生成器的输出，包括有效样本以及可选的无效样本记录。"""
 
     valid: np.ndarray
     invalid: np.ndarray
@@ -60,7 +60,7 @@ def generate_lhs_design(
     validator=None,
     repair_fn=None,
 ) -> DesignGenerationResult:
-    """Generate a Latin-hypercube design inside the physical search bounds."""
+    """在物理边界内生成拉丁超立方初始设计，并结合几何检查尽量保证样本可用。"""
 
     problem = resolve_problem(problem)
     rng = np.random.default_rng(seed)
@@ -85,7 +85,7 @@ def generate_sobol_design(
     validator=None,
     repair_fn=None,
 ) -> DesignGenerationResult:
-    """Generate a Sobol design inside the physical search bounds."""
+    """在物理边界内生成 Sobol 初始设计，以更均匀的低差异覆盖方式初始化优化。"""
 
     problem = resolve_problem(problem)
     if n_samples <= 0:
@@ -110,7 +110,7 @@ def generate_local_perturbation_design(
     validator=None,
     repair_fn=None,
 ) -> DesignGenerationResult:
-    """Perturb the reference design locally."""
+    """围绕参考设计做局部扰动采样，用于把工程经验注入初始数据集。"""
 
     problem = resolve_problem(problem)
     rng = np.random.default_rng(seed)
@@ -136,7 +136,7 @@ def generate_hybrid_design(
     validator=None,
     repair_fn=None,
 ) -> DesignGenerationResult:
-    """Combine LHS, Sobol and local reference perturbations."""
+    """组合 LHS、Sobol 和参考点局部扰动三类样本，构成覆盖性与针对性兼顾的混合初始设计。"""
 
     problem = resolve_problem(problem)
     n_lhs = int(round(n_samples * lhs_fraction))

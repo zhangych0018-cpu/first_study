@@ -16,9 +16,11 @@ optimization:
 cst:
   template_path: C:/CST_Projects/DSG_WBand_Template.cst
   results_dir: C:/CST_Projects/dsg_results
+  amd64_dir:
   timeout_per_sim: 3600
   retries: 1
   retry_backoff_seconds: 60.0
+  poll_seconds: 5.0
   parameter_mapping:
     W: W
     P: P
@@ -41,3 +43,5 @@ cst:
     kc_tm21_filename: kc_tm21.txt
     kc_fundamental_filename: kc_fundamental.txt
     sparameters_filename: sparameters.txt
+    mode_frequencies_filename: mode_frequencies.csv
+    result_tree_items: {}

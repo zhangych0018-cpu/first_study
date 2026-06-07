@@ -1,4 +1,4 @@
-"""Robust parsers for CST-exported postprocessing files."""
+"""本模块负责解析 CST 导出的文本结果，包括 DSG 所需的色散、耦合阻抗与 S 参数文件，并把它们整理成优化器可直接消费的指标。"""
 
 from __future__ import annotations
 
@@ -12,23 +12,23 @@ import pandas as pd
 
 
 class PostprocessingError(RuntimeError):
-    """Base error for CST postprocessing failures."""
+    """所有 CST 后处理异常的基类，用于统一捕获和区分导出解析阶段的问题。"""
 
 
 class PostprocessingFileMissingError(PostprocessingError, FileNotFoundError):
-    """Raised when an expected export file is missing."""
+    """在期望的导出文件不存在时抛出，帮助清楚区分没有导出来和格式不对两类问题。"""
 
 
 class PostprocessingFormatError(PostprocessingError):
-    """Raised when a postprocessing file is malformed."""
+    """在后处理文件格式错误、列缺失或含有非数值内容时抛出，阻止错误数据继续流入优化流程。"""
 
 
 class PostprocessingEmptyBandError(PostprocessingError):
-    """Raised when no samples lie inside the target frequency band."""
+    """当目标频带内没有有效采样点时抛出，用于提醒结果导出范围与工程要求不一致。"""
 
 
 class PartialResultError(PostprocessingError):
-    """Raised when only a subset of required exports is present."""
+    """当只导出了一部分必需文件时抛出，避免后续在信息不完整的情况下继续计算指标。"""
 
 
 COMMENT_PREFIXES = ("#", "%", "//")
@@ -38,6 +38,7 @@ S11_COLUMN = "S11_dB"
 S21_COLUMN = "S21_dB"
 PHASE_SHIFT_COLUMN = "phase_shift"
 VP_NORM_COLUMN = "vp_norm"
+MODE_INDEX_COLUMN = "mode_index"
 
 CANONICAL_ALIASES: dict[str, set[str]] = {
     FREQ_COLUMN: {
@@ -190,7 +191,7 @@ def _load_curve(path: str | Path, expected_columns: list[str]) -> pd.DataFrame:
 
 
 def parse_sparameters(path: str | Path) -> pd.DataFrame:
-    """Parse S-parameter export into a standardized dataframe."""
+    """把 S 参数导出文件解析为标准 DataFrame，并统一频率列与 S 参数列命名。"""
 
     return _load_curve(path, [FREQ_COLUMN, S11_COLUMN, S21_COLUMN])
 
@@ -202,7 +203,7 @@ def select_frequency_band(
     freq_column: str = FREQ_COLUMN,
     source: str = "curve",
 ) -> pd.DataFrame:
-    """Select the requested frequency band or raise a clear error."""
+    """从完整曲线中截取目标频带范围，如果该频带内没有数据就给出明确异常。"""
 
     lower, upper = band_ghz
     band_df = df[(df[freq_column] >= lower) & (df[freq_column] <= upper)].reset_index(drop=True)
@@ -214,7 +215,7 @@ def select_frequency_band(
 
 
 def validate_required_post_files(file_map: dict[str, str | Path]) -> dict[str, Path]:
-    """Validate that all required exported files exist."""
+    """检查一组必须的后处理文件是否齐全，并在缺失或只存在部分文件时返回清晰错误。"""
 
     resolved = {name: Path(path) for name, path in file_map.items()}
     existing = {name: path for name, path in resolved.items() if path.exists()}
@@ -228,22 +229,50 @@ def validate_required_post_files(file_map: dict[str, str | Path]) -> dict[str, P
 
 
 def parse_dsg_dispersion(path: str | Path) -> pd.DataFrame:
-    """Parse DSG dispersion export for one mode."""
+    """解析 DSG 色散曲线文件，统一得到频率、相移和归一化相速度三列。"""
 
     df = _load_curve(path, [FREQ_COLUMN, PHASE_SHIFT_COLUMN, VP_NORM_COLUMN])
     return df
 
 
 def parse_dsg_coupling_impedance(path: str | Path) -> pd.DataFrame:
-    """Parse DSG coupling-impedance export."""
+    """解析 DSG 耦合阻抗曲线文件，并输出标准化后的频率与 `Kc` 数据表。"""
 
     return _load_curve(path, [FREQ_COLUMN, KC_COLUMN])
 
 
 def parse_dsg_sparameters(path: str | Path) -> pd.DataFrame:
-    """Parse DSG finite-length S-parameters."""
+    """解析 DSG 有限长结构的 S 参数文件，为后续指标计算提供统一输入格式。"""
 
     return parse_sparameters(path)
+
+
+def parse_mode_frequencies(path: str | Path) -> pd.DataFrame:
+    """解析可选的 CST mode-frequency 导出文件，用于在 BO 记录中保留模式识别和本征频率诊断信息。"""
+
+    path_obj = Path(path)
+    raw_df, has_header, _ = _read_raw_table(path_obj, [MODE_INDEX_COLUMN, FREQ_COLUMN])
+    if has_header:
+        rename_map = {}
+        for column in raw_df.columns:
+            cleaned = _clean_token(str(column))
+            if cleaned in {"mode", "mode_index", "mode_number", "index"}:
+                rename_map[column] = MODE_INDEX_COLUMN
+            elif cleaned in CANONICAL_ALIASES[FREQ_COLUMN]:
+                rename_map[column] = FREQ_COLUMN
+        raw_df = raw_df.rename(columns=rename_map)
+    else:
+        raw_df.columns = [MODE_INDEX_COLUMN, FREQ_COLUMN][: raw_df.shape[1]]
+
+    missing = [column for column in [MODE_INDEX_COLUMN, FREQ_COLUMN] if column not in raw_df.columns]
+    if missing:
+        raise PostprocessingFormatError(
+            f"Missing required mode-frequency columns {missing} in {path_obj}. Available columns: {list(raw_df.columns)}"
+        )
+    df = _finalize_numeric_columns(raw_df[[MODE_INDEX_COLUMN, FREQ_COLUMN]].copy(), path_obj)
+    scale = _infer_frequency_scale(None, df[FREQ_COLUMN].to_numpy(dtype=float))
+    df[FREQ_COLUMN] = df[FREQ_COLUMN].to_numpy(dtype=float) * scale
+    return df.sort_values(MODE_INDEX_COLUMN).reset_index(drop=True)
 
 
 def _electron_velocity_norm(beam_voltage_kv: float) -> float:
@@ -259,7 +288,7 @@ def compute_sync_error(
     beam_voltage_kv: float = 5.45,
     search_window_ghz: float = 2.5,
 ) -> tuple[float, float]:
-    """Compute DSG sync error at the target frequency."""
+    """在目标频率附近计算同步误差，并返回对应的归一化相速度，供 DSG 目标函数使用。"""
 
     df = dispersion_df.copy()
     local_df = df[np.abs(df[FREQ_COLUMN] - target_frequency_ghz) <= search_window_ghz]
@@ -279,7 +308,7 @@ def compute_mode_ratio(
     target_frequency_ghz: float = 100.0,
     search_window_ghz: float = 3.0,
 ) -> float:
-    """Compute the TM21-to-fundamental mode ratio near the target frequency."""
+    """在目标频率附近计算 TM21 模与基模的耦合阻抗比值，用于模式竞争约束分析。"""
 
     tm21_local = kc_tm21_df[np.abs(kc_tm21_df[FREQ_COLUMN] - target_frequency_ghz) <= search_window_ghz]
     fund_local = kc_fund_df[np.abs(kc_fund_df[FREQ_COLUMN] - target_frequency_ghz) <= search_window_ghz]
@@ -299,11 +328,12 @@ def parse_dsg_cst_results(
     kc_tm21_path: str | Path,
     kc_fundamental_path: str | Path,
     sparameters_path: str | Path,
+    mode_frequencies_path: str | Path | None = None,
     working_band_ghz: tuple[float, float] = (96.0, 110.0),
     target_frequency_ghz: float = 100.0,
     beam_voltage_kv: float = 5.45,
 ) -> dict[str, float]:
-    """Parse DSG eigenmode and cold-test results into BO-facing metrics."""
+    """把 DSG 的色散、耦合阻抗和 S 参数导出文件整合为优化器直接使用的 BO 指标字典。"""
 
     validated = validate_required_post_files(
         {
@@ -340,7 +370,7 @@ def parse_dsg_cst_results(
     fund_idx = (band_fund[FREQ_COLUMN] - target_frequency_ghz).abs().idxmin()
     s21_mean = float(band_sparams[S21_COLUMN].mean())
 
-    return {
+    metrics = {
         "Kc_TM21_mean": float(band_kc_tm21[KC_COLUMN].mean()),
         "Kc_mean": float(band_kc_tm21[KC_COLUMN].mean()),
         "sync_error": float(sync_error),
@@ -354,3 +384,14 @@ def parse_dsg_cst_results(
         "f_fund_ghz": float(band_fund.loc[fund_idx, FREQ_COLUMN]),
         "vp_norm_target": float(vp_norm),
     }
+    if mode_frequencies_path is not None and Path(mode_frequencies_path).exists():
+        mode_frequencies = parse_mode_frequencies(mode_frequencies_path)
+        metrics.update(
+            {
+                "mode_frequency_count": float(len(mode_frequencies)),
+                "mode_frequency_min_ghz": float(mode_frequencies[FREQ_COLUMN].min()),
+                "mode_frequency_max_ghz": float(mode_frequencies[FREQ_COLUMN].max()),
+                "mode1_frequency_ghz": float(mode_frequencies[FREQ_COLUMN].iloc[0]),
+            }
+        )
+    return metrics

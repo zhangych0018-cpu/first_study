@@ -1,4 +1,4 @@
-"""Export paper-ready figure filenames from an analyzed run."""
+"""本脚本面向论文或汇报材料的出图需求，负责将项目已有分析结果整理成命名清晰、便于引用的图文件。它强调复现性和批量导出，而不是交互式分析。"""
 
 from __future__ import annotations
 

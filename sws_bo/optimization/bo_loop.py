@@ -1,4 +1,4 @@
-"""Main Bayesian optimization loop."""
+"""本模块实现 DSG 贝叶斯优化主循环，负责协调采样、仿真、代理训练、候选推荐、失败容错和结果持久化。它是整个项目的执行中枢。"""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ from .initial_design import generate_hybrid_design
 
 @dataclass
 class BOIterationSummary:
-    """Per-iteration summary."""
+    """记录每一轮贝叶斯优化的摘要信息，例如候选数、成功数和关键评价指标，便于回顾运行历史。"""
 
     iteration: int
     n_evaluated: int
@@ -36,7 +36,7 @@ class BOIterationSummary:
 
 
 class SWSBayesianOptimizer:
-    """Mock-friendly constrained multi-objective Bayesian optimizer."""
+    """实现对 DSG 慢波结构友好的多目标贝叶斯优化主循环，协调采样、仿真、建模和结果持久化。"""
 
     def __init__(
         self,
@@ -57,6 +57,11 @@ class SWSBayesianOptimizer:
         cst_retry_backoff: float = 60.0,
         cst_working_band_ghz: tuple[float, float] = (96.0, 110.0),
         cst_postprocess_filenames: dict[str, str] | None = None,
+        cst_result_tree_items: dict[str, str] | None = None,
+        cst_parameter_mapping: dict[str, str] | None = None,
+        cst_fixed_parameters: dict[str, float | int | str] | None = None,
+        cst_amd64_dir: str | Path | None = None,
+        cst_poll_seconds: float = 5.0,
     ) -> None:
         self.problem = resolve_problem(problem)
         self.problem_name = getattr(self.problem, "name", self.problem.__name__)
@@ -79,6 +84,11 @@ class SWSBayesianOptimizer:
             cst_retry_backoff,
             cst_working_band_ghz,
             cst_postprocess_filenames,
+            cst_result_tree_items,
+            cst_parameter_mapping,
+            cst_fixed_parameters,
+            cst_amd64_dir,
+            cst_poll_seconds,
         )
         self.evaluations = pd.DataFrame()
         self.history = pd.DataFrame()
@@ -95,6 +105,11 @@ class SWSBayesianOptimizer:
         cst_retry_backoff,
         cst_working_band_ghz,
         cst_postprocess_filenames,
+        cst_result_tree_items,
+        cst_parameter_mapping,
+        cst_fixed_parameters,
+        cst_amd64_dir,
+        cst_poll_seconds,
     ):
         if self.backend == "mock_dsg":
             return MockDSGCSTSimulator(seed=self.seed)
@@ -107,6 +122,11 @@ class SWSBayesianOptimizer:
                 retry_backoff=cst_retry_backoff,
                 working_band_ghz=cst_working_band_ghz,
                 postprocess_filenames=cst_postprocess_filenames,
+                result_tree_items=cst_result_tree_items,
+                parameter_mapping=cst_parameter_mapping,
+                fixed_parameters=cst_fixed_parameters,
+                cst_amd64_dir=cst_amd64_dir,
+                poll_seconds=cst_poll_seconds,
             )
         except CSTBackendUnavailableError as exc:
             self.logger.warning("CST unavailable, falling back to mock backend: %s", exc)
@@ -114,7 +134,7 @@ class SWSBayesianOptimizer:
             return MockDSGCSTSimulator(seed=self.seed)
 
     def run(self) -> dict:
-        """Execute the BO loop and export artifacts."""
+        """执行完整 BO 循环并导出结果产物，是脚本层调度 mock 或真实 CST 优化时的主入口。"""
 
         start = time.perf_counter()
         if self.evaluations.empty:
@@ -259,7 +279,7 @@ class SWSBayesianOptimizer:
             self.history = pd.read_csv(hist_file)
 
     def export_pareto_dataframe(self) -> pd.DataFrame:
-        """Return feasible Pareto rows from successful evaluations."""
+        """从成功样本中整理出可行 Pareto 数据表，供分析脚本和最终候选筛选复用。"""
 
         success_df = self._successful_evaluations()
         if len(success_df) == 0:

@@ -1,1 +1,2 @@
-"""Utility helpers for the SWS BO package."""
+"""本模块是通用工具子包的入口，汇总 IO、日志、几何检查、后处理和 CST 接口等基础设施函数。它主要承载跨子模块共享的底层能力。"""
+

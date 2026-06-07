@@ -1,3 +1,5 @@
+"""本测试模块用于验证 DSG 几何配置、边界规则和告警逻辑，确保结构参数转几何描述时不会出现明显错误。"""
+
 from sws_bo.geometry.dsg_sws import DSGGeometryBuilder, validate_dsg_geometry
 from sws_bo.problems.dsg_bwo_problem import DSGSWSProblem
 

@@ -1,4 +1,4 @@
-"""Run a minimal end-to-end DSG mock BO demo."""
+"""本脚本用于快速跑通 DSG 的 mock 演示流程，覆盖初始化采样、代理建模、采集优化、结果分析等关键链路。它强调速度和可复现性，适合本地自检和演示。"""
 
 from __future__ import annotations
 

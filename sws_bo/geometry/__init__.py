@@ -1,1 +1,2 @@
-"""Geometry helpers for different SWS topologies."""
+"""本模块是 DSG 几何子包的入口，用于暴露几何配置、构建器和几何摘要等接口。它把几何层与优化层的耦合压到最小。"""
+

@@ -1,3 +1,5 @@
+"""本测试模块用于验证多目标超体积计算在简单可验证样例上的正确性。"""
+
 import numpy as np
 
 def test_hypervolume_simple_example():

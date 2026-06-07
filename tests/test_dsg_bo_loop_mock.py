@@ -1,3 +1,5 @@
+"""本测试模块用于验证 DSG 专用 mock BO 流程能否顺利完成最小轮次运行，并检查关键输出文件与状态字段。"""
+
 from pathlib import Path
 
 

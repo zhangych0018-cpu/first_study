@@ -1,3 +1,5 @@
+"""本测试模块用于验证 DSG mock 仿真器输出字段的完整性、参考点附近的量级合理性以及失败分支处理。"""
+
 from sws_bo.problems.dsg_bwo_problem import DSGSWSProblem
 from sws_bo.utils.mock_dsg_cst import MockDSGCSTSimulator
 

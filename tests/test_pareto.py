@@ -1,3 +1,5 @@
+"""本测试模块用于验证 Pareto 有效性判断和可行前沿提取函数在小型样例上的表现。"""
+
 import numpy as np
 
 from sws_bo.analysis.pareto import feasible_pareto_front, is_pareto_efficient

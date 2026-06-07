@@ -1,4 +1,4 @@
-"""Analyze DSG BO results."""
+"""本脚本负责读取一次或多次 DSG 优化运行产生的结果目录，并自动生成 Pareto 图、超体积历史、约束可行性和敏感性等分析输出。它是结果复盘与图表整理的统一入口。"""
 
 from __future__ import annotations
 

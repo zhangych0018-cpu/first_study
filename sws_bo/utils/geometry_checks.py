@@ -1,4 +1,4 @@
-"""Engineering proxy rules for validating DSG candidate geometries."""
+"""本模块提供 DSG 及相关几何设计的工程代理检查规则，用于在进入仿真前尽早发现越界、过窄通道和潜在自交等明显问题。"""
 
 from __future__ import annotations
 
@@ -17,28 +17,28 @@ def _to_array(x: dict | Iterable[float] | np.ndarray) -> np.ndarray:
 
 
 def check_bounds(x: dict | Iterable[float] | np.ndarray) -> bool:
-    """Check physical bounds only."""
+    """仅检查设计参数是否落在物理边界之内，是几何检查链路中最基础的一层。"""
 
     arr = _to_array(x)
     return DSGSWSProblem.validate_x(arr)
 
 
 def check_basic_geometry(x: dict | Iterable[float] | np.ndarray) -> bool:
-    """Check coarse DSG geometry relations."""
+    """检查 DSG 几何的粗粒度关系约束，例如槽厚与周期、结构高度等基本组合是否合法。"""
 
     w, p, t, g, h = _to_array(x)
     return bool(w > 0 and p > 0 and t > 0 and g > 0 and h > 0 and g < p and t < h + 0.25)
 
 
 def check_channel_clearance(x: dict | Iterable[float] | np.ndarray) -> bool:
-    """Ensure the beam tunnel is not unrealistically narrow."""
+    """检查电子束通道是否过窄，从工程经验上避免明显不可制造或不可工作的设计。"""
 
     _, _, t, g, h = _to_array(x)
     return bool(t >= 0.16 and h - t >= 0.05 and g <= 0.75 * h)
 
 
 def check_self_intersection_proxy(x: dict | Iterable[float] | np.ndarray) -> bool:
-    """Proxy rule for likely over-packed DSG geometry."""
+    """用代理规则近似判断 DSG 结构是否过于拥挤，从而提前发现潜在自交或过密堆叠问题。"""
 
     w, p, t, g, h = _to_array(x)
     packedness = (g / max(p, 1e-9)) + 0.4 * (h / max(w, 1e-9)) + 0.35 * (t / max(h, 1e-9))
@@ -46,7 +46,7 @@ def check_self_intersection_proxy(x: dict | Iterable[float] | np.ndarray) -> boo
 
 
 def is_valid_design(x: dict | Iterable[float] | np.ndarray) -> bool:
-    """Combined validity predicate used by design generators and simulators."""
+    """把多项几何检查组合成一个统一有效性判定函数，供采样器和仿真器直接调用。"""
 
     return (
         check_bounds(x)
@@ -61,7 +61,7 @@ def repair_or_reject_design(
     x: dict | Iterable[float] | np.ndarray,
     max_tries: int = 3,
 ) -> np.ndarray | None:
-    """Try simple clipping and reference blending before rejecting."""
+    """在正式拒绝样本前尝试简单修复，例如裁剪或向参考设计回拉，以提高初始采样可用率。"""
 
     arr = np.clip(_to_array(x), DSGSWSProblem.bounds[:, 0], DSGSWSProblem.bounds[:, 1])
     if is_valid_design(arr):

@@ -1,3 +1,5 @@
+"""本测试模块用于验证 DSG 问题定义中的归一化、反归一化、边界检查和参考设计一致性。"""
+
 import numpy as np
 
 from sws_bo.problems.dsg_bwo_problem import DSGSWSProblem

@@ -1,4 +1,4 @@
-"""Pareto-front utilities."""
+"""本模块实现 Pareto 有效性判定、可行前沿提取和代表性设计选择逻辑，用于把多目标结果整理成工程上更容易阅读的候选集合。"""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import pandas as pd
 
 
 def is_pareto_efficient(objectives: np.ndarray) -> np.ndarray:
-    """Return the minimization Pareto mask."""
+    """返回最小化问题下的 Pareto 有效掩码，用于识别哪些点没有被其他点同时全面优于。"""
 
     values = np.asarray(objectives, dtype=float)
     n = len(values)
@@ -22,7 +22,7 @@ def is_pareto_efficient(objectives: np.ndarray) -> np.ndarray:
 
 
 def feasible_pareto_front(objectives: np.ndarray, feasible_mask: np.ndarray) -> np.ndarray:
-    """Pareto mask restricted to feasible rows."""
+    """在仅保留可行样本的前提下提取 Pareto 前沿，避免不可行设计混入代表结果。"""
 
     mask = np.zeros(len(objectives), dtype=bool)
     feasible_idx = np.where(np.asarray(feasible_mask, dtype=bool))[0]
@@ -41,7 +41,7 @@ def select_representative_designs(
     vp_col: str = "vp_std",
     loss_col: str = "ohmic_loss_mean",
 ) -> pd.DataFrame:
-    """Select diverse representative designs from a Pareto dataframe."""
+    """从 Pareto 数据表中挑选具有代表性的多样化候选，便于工程师后续人工比较和筛选。"""
 
     if len(pareto_df) <= n_select:
         return pareto_df.copy()

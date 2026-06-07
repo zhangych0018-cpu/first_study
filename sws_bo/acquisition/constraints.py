@@ -1,4 +1,4 @@
-"""Constraint utilities for S11 feasibility handling."""
+"""本模块集中处理可行概率、硬筛选与可行 Pareto 掩码等约束逻辑，确保约束语义在代理建模、采集函数和分析阶段保持一致。"""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ def probability_feasible(
     threshold: float | None = None,
     problem=DSGSWSProblem,
 ) -> torch.Tensor:
-    """Compute P(S11 <= threshold) from the GP posterior."""
+    """基于 GP 后验分布计算 `S11` 满足阈值约束的概率，用于软约束筛选与采集函数加权。"""
 
     problem = resolve_problem(problem)
     threshold = problem.s11_constraint_db if threshold is None else threshold
@@ -36,7 +36,7 @@ def hard_feasibility_filter(
     threshold: float | None = None,
     problem=DSGSWSProblem,
 ) -> np.ndarray:
-    """Boolean mask for hard constraint satisfaction."""
+    """根据硬阈值直接生成布尔可行掩码，适合在结果统计和后处理阶段快速筛掉不满足约束的样本。"""
 
     problem = resolve_problem(problem)
     threshold = problem.s11_constraint_db if threshold is None else threshold
@@ -49,7 +49,7 @@ def constrained_objective_mask(
     threshold: float | None = None,
     problem=DSGSWSProblem,
 ) -> np.ndarray:
-    """Mask for rows that are both successful and S11-feasible."""
+    """生成同时满足“仿真成功”和 `S11` 约束的样本掩码，作为下游 Pareto 和训练筛选的基础。"""
 
     feasible = hard_feasibility_filter(Y_raw, threshold=threshold, problem=problem)
     if success_mask is None:
@@ -64,7 +64,7 @@ def feasible_pareto_mask(
     threshold: float | None = None,
     problem=DSGSWSProblem,
 ) -> np.ndarray:
-    """Pareto mask among feasible points only."""
+    """仅在可行样本内部计算 Pareto 掩码，避免不可行点干扰多目标前沿判断。"""
 
     feasible = constrained_objective_mask(Y_raw, success_mask=success_mask, threshold=threshold, problem=problem)
     mask = np.zeros(len(objective_values), dtype=bool)

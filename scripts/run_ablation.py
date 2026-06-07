@@ -1,4 +1,4 @@
-"""Run DSG ablation experiments."""
+"""本脚本负责组织 DSG 项目的消融实验，包括初始样本规模、采集函数、约束处理和鲁棒排序等对比设置。它将统一调用项目内已有组件并输出结构化对比结果。"""
 
 from __future__ import annotations
 

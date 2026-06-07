@@ -1,4 +1,4 @@
-"""Baseline search strategies for comparison experiments."""
+"""本模块实现 DSG 问题上的若干基线搜索策略，用于与主贝叶斯优化方法做公平对比。它更强调实验可比性，而不是单次运行的复杂度。"""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ def _evaluate_designs(simulator, points: np.ndarray) -> tuple[np.ndarray, np.nda
 
 
 def random_search(simulator, n_samples: int, seed: int = 42, problem=DSGSWSProblem) -> dict:
-    """Random baseline within bounds."""
+    """在参数边界内执行随机搜索基线，用于给主 BO 方法提供最简单的性能参考。"""
 
     problem = resolve_problem(problem)
     rng = np.random.default_rng(seed)
@@ -33,7 +33,7 @@ def random_search(simulator, n_samples: int, seed: int = 42, problem=DSGSWSProbl
 
 
 def lhs_search(simulator, n_samples: int, seed: int = 42, problem=DSGSWSProblem) -> dict:
-    """LHS baseline without sequential BO."""
+    """使用拉丁超立方采样执行非序贯搜索基线，观察单纯覆盖式采样在 DSG 问题上的表现。"""
 
     problem = resolve_problem(problem)
     design = generate_lhs_design(n_samples=n_samples, seed=seed, normalized=False, problem=problem)
@@ -42,7 +42,7 @@ def lhs_search(simulator, n_samples: int, seed: int = 42, problem=DSGSWSProblem)
 
 
 def surrogate_then_optimize(simulator, n_initial: int, n_candidates: int = 1024, seed: int = 42, problem=DSGSWSProblem) -> dict:
-    """Fit one surrogate on an initial design and optimize its posterior mean."""
+    """先用初始设计数据训练一次代理模型，再直接优化代理的后验均值，作为简化版代理优化基线。"""
 
     problem = resolve_problem(problem)
     initial = generate_hybrid_design(n_initial, seed=seed, normalized=False, problem=problem).valid
@@ -68,7 +68,7 @@ def weighted_sum_bo(
     seed: int = 42,
     problem=DSGSWSProblem,
 ) -> dict:
-    """Simple weighted-sum BO baseline using posterior mean and uncertainty."""
+    """采用加权和目标的简单 BO 基线，用于与真正的多目标 qNEHVI 主方法进行对比。"""
 
     problem = resolve_problem(problem)
     weights = np.asarray(weights if weights is not None else [0.6, 0.2, 0.2], dtype=float)

@@ -1,4 +1,4 @@
-"""Geometry helpers for the W-band double-staggered grating SWS."""
+"""本模块定义 DSG 慢波结构的几何配置对象和参数展开逻辑，用于把优化变量转换为工程几何描述与 CST 参数字典。它是结构替换后的几何基础层。"""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from ..problems.dsg_bwo_problem import DSGSWSProblem
 
 @dataclass
 class DSGGeometryConfig:
-    """Configurable fixed parameters for the DSG SWS."""
+    """封装 DSG 慢波结构中不参与优化但需要长期固定的几何或物理参数配置。"""
 
     N_periods: int = 80
     target_frequency_ghz: float = 100.0
@@ -24,14 +24,14 @@ class DSGGeometryConfig:
 
 @dataclass
 class DSGGeometryValidation:
-    """Validation output with soft warnings."""
+    """保存几何合法性检查的结果，包括是否通过、失败原因以及工程性软告警。"""
 
     is_valid: bool
     warnings: list[str] = field(default_factory=list)
 
 
 class DSGGeometryBuilder:
-    """Build derived DSG geometry parameter dictionaries."""
+    """负责把优化变量扩展为单周期或有限长 DSG 结构所需的完整参数字典。"""
 
     def __init__(self, config: DSGGeometryConfig | None = None) -> None:
         self.config = config or DSGGeometryConfig()
@@ -56,7 +56,7 @@ def _to_param_dict(x: dict | np.ndarray) -> dict[str, float]:
 
 
 def validate_dsg_geometry(x: dict | np.ndarray) -> DSGGeometryValidation:
-    """Validate DSG geometry and emit soft engineering warnings."""
+    """对 DSG 结构参数执行工程代理检查，并给出软告警而不是一味硬失败。"""
 
     params = _to_param_dict(x)
     warnings: list[str] = []
@@ -85,7 +85,7 @@ def validate_dsg_geometry(x: dict | np.ndarray) -> DSGGeometryValidation:
 
 
 def build_unit_cell_parameters(x: dict | np.ndarray, config: DSGGeometryConfig | None = None) -> dict[str, float]:
-    """Build unit-cell parameters including derived offsets."""
+    """构造单周期建模所需的参数集合，包括若干派生几何量，方便周期单元分析。"""
 
     cfg = config or DSGGeometryConfig()
     params = _to_param_dict(x)
@@ -107,7 +107,7 @@ def build_unit_cell_parameters(x: dict | np.ndarray, config: DSGGeometryConfig |
 
 
 def build_finite_length_parameters(x: dict | np.ndarray, config: DSGGeometryConfig | None = None) -> dict[str, float]:
-    """Build finite-length SWS parameters."""
+    """构造有限长慢波结构所需的参数集合，使端口驱动或 cold-test 模型也能复用同一套变量。"""
 
     cfg = config or DSGGeometryConfig()
     unit = build_unit_cell_parameters(x, config=cfg)
@@ -124,7 +124,7 @@ def build_finite_length_parameters(x: dict | np.ndarray, config: DSGGeometryConf
 
 
 def export_cst_parameter_dict(x: dict | np.ndarray, config: DSGGeometryConfig | None = None) -> dict[str, float]:
-    """Export a CST-friendly parameter dictionary."""
+    """把几何参数整理成适合直接写入 CST 工程参数表的字典格式。"""
 
     params = build_finite_length_parameters(x, config=config)
     ordered_keys = ["W", "P", "T", "G", "H", "N_periods", "conductivity", "rounding_radius"]
@@ -132,7 +132,7 @@ def export_cst_parameter_dict(x: dict | np.ndarray, config: DSGGeometryConfig | 
 
 
 def summarize_geometry(x: dict | np.ndarray, config: DSGGeometryConfig | None = None) -> dict[str, float | list[str]]:
-    """Summarize geometry with derived metrics and warnings."""
+    """输出带有派生量和告警信息的几何摘要，便于调试参数、检查建模合理性和记录实验设置。"""
 
     cfg = config or DSGGeometryConfig()
     params = build_finite_length_parameters(x, config=cfg)

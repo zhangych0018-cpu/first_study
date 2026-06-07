@@ -1,4 +1,4 @@
-"""Problem definition for the W-band DSG slow-wave structure."""
+"""本模块定义 W 波段 DSG 慢波结构的参数空间、归一化规则、目标变换和约束检查逻辑。它是整个 DSG 优化框架的数学问题定义核心。"""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import torch
 
 
 class DSGSWSProblem:
-    """Five-dimensional DSG slow-wave structure inverse-design problem."""
+    """定义五维 DSG 慢波结构逆向设计问题，包括参数范围、参考设计、目标变换与约束判断。"""
 
     name = "DSG_W_Band_BWO"
     dim = 5

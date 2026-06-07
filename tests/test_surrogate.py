@@ -1,3 +1,5 @@
+"""本测试模块用于验证代理模型在小样本数据上能够完成训练和预测，并返回形状正确的结果。"""
+
 def test_surrogate_fit_and_predict():
     import torch
 

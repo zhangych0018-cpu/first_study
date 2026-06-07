@@ -1,4 +1,4 @@
-"""Run a minimal multifidelity calibration demo on mock data."""
+"""本脚本用于演示多保真校正模块的基本用法，展示如何把低保真模拟数据和高保真校准数据组合起来估计偏差。它主要用于说明接口形态和校准流程。"""
 
 from __future__ import annotations
 

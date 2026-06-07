@@ -1,4 +1,4 @@
-"""Generate initial DSG mock or dry-run CST-backed data."""
+"""本脚本用于为 DSG 问题批量生成初始样本数据，通常服务于 mock 演示、代理模型预热和手工检查输入输出分布。它会按照当前问题定义和采样策略生成可直接保存的数据表。"""
 
 from __future__ import annotations
 

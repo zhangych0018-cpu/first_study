@@ -1,3 +1,5 @@
+"""本测试模块用于验证约束相关辅助函数的逻辑正确性，确保可行性掩码、约束筛选和概率处理结果符合预期。"""
+
 def test_acquisition_returns_legal_candidates():
     import torch
 

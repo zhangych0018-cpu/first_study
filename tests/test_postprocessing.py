@@ -1,3 +1,5 @@
+"""本测试模块用于验证真实 CST 后处理文件解析器的缺文件、缺列、空频带和单位换算等边界情况。"""
+
 from pathlib import Path
 
 import pytest

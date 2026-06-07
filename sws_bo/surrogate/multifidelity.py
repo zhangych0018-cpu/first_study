@@ -1,4 +1,4 @@
-"""Autoregressive multi-fidelity correction utilities."""
+"""本模块实现自回归式多保真建模与校准逻辑，用于把低保真模拟结果映射到更接近高保真或实测数据的预测。它是后续实验校准的重要扩展位。"""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from sklearn.gaussian_process.kernels import ConstantKernel, Matern, WhiteKernel
 
 @dataclass
 class MultiFidelityOutputModel:
-    """One-output autoregressive multifidelity model."""
+    """描述单个输出量的一阶自回归多保真校正模型，保存低保真到高保真的映射参数。"""
 
     rho: float
     delta_gp: GaussianProcessRegressor | None
@@ -20,7 +20,7 @@ class MultiFidelityOutputModel:
 
 @dataclass
 class MultiFidelityModel:
-    """Container for per-output multifidelity corrections."""
+    """作为多输出多保真校正容器，统一组织每个输出对应的单输出校正模型。"""
 
     output_models: dict[str, MultiFidelityOutputModel]
     low_X: np.ndarray
@@ -40,7 +40,7 @@ def fit_autoregressive_multifidelity(
     high_Y: np.ndarray,
     output_names: list[str],
 ) -> MultiFidelityModel:
-    """Fit per-output autoregressive multifidelity corrections."""
+    """为每个输出分别拟合自回归多保真校正模型，得到从低保真到高保真的修正关系。"""
 
     models: dict[str, MultiFidelityOutputModel] = {}
     low_X = np.asarray(low_X, dtype=float)
@@ -62,7 +62,7 @@ def fit_autoregressive_multifidelity(
 
 
 def predict_high_fidelity(model: MultiFidelityModel, X: np.ndarray, output_names: list[str]) -> np.ndarray:
-    """Predict corrected high-fidelity outputs."""
+    """利用已拟合的多保真模型预测高保真输出，给出校正后的结果估计。"""
 
     X = np.asarray(X, dtype=float)
     outputs = []
@@ -78,7 +78,7 @@ def predict_high_fidelity(model: MultiFidelityModel, X: np.ndarray, output_names
 
 
 def estimate_bias(model: MultiFidelityModel) -> dict[str, dict[str, float]]:
-    """Summarize multiplicative and additive bias terms."""
+    """总结多保真模型中的乘性偏差与加性偏差，帮助理解低高保真之间的系统误差。"""
 
     return {
         name: {
@@ -95,7 +95,7 @@ def calibrate_with_measurements(
     measurement_df,
     output_names: list[str],
 ) -> tuple[MultiFidelityModel, np.ndarray]:
-    """Fit and apply multifidelity calibration from a measurement dataframe."""
+    """根据实测或高保真数据对低保真结果执行校准，并输出校准后的预测结果。"""
 
     high_X = measurement_df[[c for c in measurement_df.columns if c.startswith("x_")]].to_numpy()
     high_Y = measurement_df[output_names].to_numpy()
